@@ -1,0 +1,31 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Secrets — never commit real values
+appsettings.Development.json
+appsettings.Local.json
+*.env
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Logs
+*.log
