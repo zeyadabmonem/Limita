@@ -1,4 +1,8 @@
+using Limita.Business.Services.Implementation;
+using Limita.Business.Services.Interface;
 using Limita.Data;
+using Limita.Data.Repo.Implementation;
+using Limita.Data.Repo.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -36,6 +40,8 @@ public partial class Program
             });
         });
 
+        builder.Services.AddScoped<IUserRepo, UserRepo>();
+        builder.Services.AddScoped<IRegisterService, RegisterService>();
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
