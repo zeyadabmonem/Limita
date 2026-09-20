@@ -39,7 +39,8 @@ public partial class Program
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
-
+        builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddScoped<IUserRepo, UserRepo>();
         builder.Services.AddScoped<IRegisterService, RegisterService>();
         // EF Core / SQL Server

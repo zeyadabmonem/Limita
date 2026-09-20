@@ -11,9 +11,12 @@ namespace Limita.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IRegisterService registerService;
-        public AuthController(IRegisterService registerService) { 
+        private readonly ILoginService loginService;
+
+        public AuthController(IRegisterService registerService , ILoginService loginService) { 
         
             this.registerService = registerService;
+            this.loginService = loginService;
         }
         [HttpPost("register")]
         public async Task<ActionResult<RegisterResponseDTO>> Register( [FromBody] RegisterRequestDTO requestDTO)
@@ -25,6 +28,19 @@ namespace Limita.API.Controllers
 
             return Ok(result.Data);
         }
+
+        [HttpPost("login")]
+        public async Task<ActionResult<LoginResponseDTO>> Login( [FromBody] LoginRequestDTO requestDTO)
+        {
+            ServiceResult<LoginResponseDTO> result = await loginService.LoginAsync(requestDTO);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
+
+
 
     }
 }
