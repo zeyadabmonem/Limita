@@ -46,6 +46,7 @@ CREATE TABLE Accounts (
     CreatedAt       DATETIME2           NOT NULL DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT PK_Accounts PRIMARY KEY (Id),
     CONSTRAINT FK_Accounts_Users FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+    CONSTRAINT CK_Accounts_Balance_NonNegative CHECK (Balance >= 0),
     CONSTRAINT CK_Accounts_Status CHECK (Status IN ('Active','Frozen','Closed'))
 );
 CREATE INDEX IX_Accounts_UserId ON Accounts(UserId);

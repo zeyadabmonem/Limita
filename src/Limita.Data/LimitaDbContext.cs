@@ -46,6 +46,7 @@ public class LimitaDbContext : DbContext
              .HasForeignKey(a => a.UserId)
              .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(a => a.UserId);
+            e.ToTable(tb => tb.HasCheckConstraint("CK_Accounts_Balance_NonNegative", "[Balance] >= 0"));
         });
 
         // ---------- Card ----------

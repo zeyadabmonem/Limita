@@ -36,5 +36,21 @@ namespace Limita.Data.Repo.Implementation
             var user = await dbContext.Users.Where(u =>  u.Email == email).FirstOrDefaultAsync();
             return  user;
         }
+
+        public async Task<User?> GetByIdAsync(int userId)
+        {
+            return await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+        public async Task<bool> ExistsByEmailOrPhoneForOtherUserAsync(int userId, string email, string phone)
+        {
+            return await dbContext.Users.AnyAsync(u => u.Id != userId && (u.Email == email || u.PhoneNumber == phone));
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            dbContext.Users.Update(user);
+            await dbContext.SaveChangesAsync();
+        }
     }
 }
