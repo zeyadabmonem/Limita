@@ -43,6 +43,9 @@ public partial class Program
         builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddScoped<IUserRepo, UserRepo>();
         builder.Services.AddScoped<IRegisterService, RegisterService>();
+        builder.Services.AddScoped<IAccountRepo, AccountRepo>();
+        builder.Services.AddScoped<IProfileService, ProfileService>();
+        builder.Services.AddScoped<IAccountService, AccountService>();
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
