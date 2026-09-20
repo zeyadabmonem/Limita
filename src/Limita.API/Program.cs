@@ -39,6 +39,8 @@ public partial class Program
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
+        builder.Services.AddScoped<IBeneficiaryService, BeneficiaryService>();
+        builder.Services.AddScoped<IBeneficiaryRepo, BeneficiaryRepo>();
         builder.Services.AddScoped<ITokenService, TokenService>();
         builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddScoped<IUserRepo, UserRepo>();

@@ -1,8 +1,10 @@
 ﻿using Limita.Business.Common;
 using Limita.Business.DTOs.Auth;
 using Limita.Business.Services.Interface;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Limita.API.Controllers
 {
@@ -10,13 +12,15 @@ namespace Limita.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        
         private readonly IRegisterService registerService;
         private readonly ILoginService loginService;
-
+        
         public AuthController(IRegisterService registerService , ILoginService loginService) { 
         
             this.registerService = registerService;
             this.loginService = loginService;
+            
         }
         [HttpPost("register")]
         public async Task<ActionResult<RegisterResponseDTO>> Register( [FromBody] RegisterRequestDTO requestDTO)
@@ -36,7 +40,7 @@ namespace Limita.API.Controllers
 
             if (!result.Success)
                 return BadRequest(result.Message);
-
+            
             return Ok(result.Data);
         }
 
