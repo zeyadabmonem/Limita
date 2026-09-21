@@ -48,6 +48,8 @@ public partial class Program
         builder.Services.AddScoped<IAccountRepo, AccountRepo>();
         builder.Services.AddScoped<IProfileService, ProfileService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
+        builder.Services.AddScoped<ICardRepo, CardRepo>();
+        builder.Services.AddScoped<ICardService, CardService>();
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
