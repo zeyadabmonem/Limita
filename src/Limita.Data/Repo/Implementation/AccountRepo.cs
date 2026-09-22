@@ -16,7 +16,7 @@ public class AccountRepo : IAccountRepo
     public async Task<List<Account>> GetByUserIdAsync(int userId)
     {
         return await dbContext.Accounts
-            .AsNoTracking()
+            
             .Where(a => a.UserId == userId)
             .ToListAsync();
     }
@@ -24,7 +24,9 @@ public class AccountRepo : IAccountRepo
     public async Task<Account?> GetByIdAndUserIdAsync(int accountId, int userId)
     {
         return await dbContext.Accounts
-            .AsNoTracking()
+          
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
     }
+
+   
 }
