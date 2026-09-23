@@ -130,12 +130,13 @@ public class TransferService : ITransferService
     {
         var transfer = await transactionRepo.GetTransferAsync(transactionId);
 
-        if(transfer == null || transfer.UserId != userId)
+        if(transfer == null || transfer.UserId != userId || transfer.BeneficiaryId is null)
             return new ServiceResult<TransferResponseDTO> { Success = false, Message = "Invalid operation" };
 
-        var beneficiary = await beneficiaryService.GetBeneficiaryById(userId, (int)transfer.BeneficiaryId !);
 
-        if(beneficiary is  null)
+         var beneficiary = await beneficiaryService.GetBeneficiaryById(userId, (int)transfer.BeneficiaryId );
+
+        if(beneficiary.Data is  null || !beneficiary.Success)
               return new ServiceResult<TransferResponseDTO> { Success = false, Message = "Invalid operation" };
 
 
@@ -143,7 +144,7 @@ public class TransferService : ITransferService
         { 
         
              Amount = transfer.Amount,
-              BeneficiaryName = beneficiary?.Data?.Name ?? "",
+              BeneficiaryName = beneficiary.Data.Name,
                Currency = transfer.Currency,
                 Date = transfer.CreatedAt,
                  Status = transfer.Status,
@@ -152,7 +153,7 @@ public class TransferService : ITransferService
 
         };
 
-        return new ServiceResult<TransferResponseDTO> { Success = true, Message = "tansfer retrieved" , Data = transferresponse };
+        return new ServiceResult<TransferResponseDTO> { Success = true, Message = "transfer retrieved" , Data = transferresponse };
 
     }
 }

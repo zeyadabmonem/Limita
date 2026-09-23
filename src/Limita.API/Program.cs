@@ -16,7 +16,11 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // ---------- Services ----------
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
         {
@@ -52,6 +56,8 @@ public partial class Program
         builder.Services.AddScoped<ICardService, CardService>();
         builder.Services.AddScoped<ITransactionRepo, TransactionRepo>();
         builder.Services.AddScoped<ITransferService, TransferService>();
+        builder.Services.AddScoped<ITransactionService, TransactionService>();
+
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
