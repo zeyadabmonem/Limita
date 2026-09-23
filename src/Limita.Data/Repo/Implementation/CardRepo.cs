@@ -15,7 +15,7 @@ namespace Limita.Data.Repo.Implementation
         {
             this.dbContext = dbContext;
         }
-        public async Task<Card?> GetCardByIdAsync(int cardId  )
+        public async Task<Card?> GetCardByIdAsync(int cardId)
         {
            return await dbContext.Cards.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == cardId);
         }
