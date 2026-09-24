@@ -1,11 +1,4 @@
-﻿using Limita.API.Helper;
-using Limita.Business.DTOs.Cards;
-using Limita.Business.Services.Interface;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
-namespace Limita.API.Controllers
+﻿namespace Limita.API.Controllers
 {
     [Authorize]
     [Route("api/v1/cards")]

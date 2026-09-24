@@ -1,14 +1,3 @@
-using Limita.Business.Services.Implementation;
-using Limita.Business.Services.Interface;
-using Limita.Data;
-using Limita.Data.Repo.Implementation;
-using Limita.Data.Repo.Interface;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Text;
-
 public partial class Program
 {
     private static void Main(string[] args)
@@ -57,6 +46,8 @@ public partial class Program
         builder.Services.AddScoped<ITransactionRepo, TransactionRepo>();
         builder.Services.AddScoped<ITransferService, TransferService>();
         builder.Services.AddScoped<ITransactionService, TransactionService>();
+        builder.Services.AddScoped<IBillRepo, BillRepo>();
+        builder.Services.AddScoped<IBillService, BillService>();
 
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>

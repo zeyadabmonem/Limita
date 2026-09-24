@@ -1,84 +1,185 @@
 ﻿using Limita.Business.Common;
+using Limita.Business.DTOs.Bill;
 using Limita.Business.DTOs.Bills;
 using Limita.Business.Services.Interface;
+using Limita.Data;
 using Limita.Data.Entities;
+using Limita.Data.Entities.Enums;
 using Limita.Data.Repo.Interface;
 
-namespace Limita.Business.Services.Implementation
+namespace Limita.Business.Services.Implementation;
+
+public class BillService : IBillService
 {
-    public class BillService : IBillService
+    private readonly LimitaDbContext dbContext;
+    private readonly IBillRepo billRepo;
+    private readonly IAccountRepo accountRepo;
+    private readonly ITransactionRepo transactionRepo;
+
+    public BillService(
+        LimitaDbContext dbContext,
+        IBillRepo billRepo,
+        IAccountRepo accountRepo,
+        ITransactionRepo transactionRepo)
     {
-        private readonly IBillRepo billRepo;
+        this.dbContext = dbContext;
+        this.billRepo = billRepo;
+        this.accountRepo = accountRepo;
+        this.transactionRepo = transactionRepo;
+    }
 
-        public BillService(IBillRepo billRepo)
+    public async Task<ServiceResult<List<BillResponseDTO>>> GetBillsAsync(int userId)
+    {
+        List<Bill> bills = await billRepo.GetByUserIdAsync(userId);
+
+        return new ServiceResult<List<BillResponseDTO>>
         {
-            this.billRepo = billRepo;
-        }
+            Success = true,
+            Message = "Bills retrieved successfully",
+            Data = bills.Select(MapToResponse).ToList()
+        };
+    }
 
-        ServiceResult<List<BillResponseDTO>> GetAll(int userId)
+    public async Task<ServiceResult<BillResponseDTO>> GetBillByIdAsync(int userId, int billId)
+    {
+        Bill? bill = await billRepo.GetByIdAndUserIdAsync(billId, userId);
+
+        if (bill is null)
         {
-            var bills = billRepo.GetAllBills(userId);
-
-            var billsReponse = new List<BillResponseDTO>();
-
-            foreach (var bill in bills)
-            {
-                billsReponse.Add(new BillResponseDTO
-                {
-                    Id = bill.Id,
-                    UserId = bill.UserId,
-                    ProviderName = bill.ProviderName,
-                    BillNumber = bill.BillNumber,
-                    Amount = bill.Amount,
-                    DueDate = bill.DueDate,
-                    Status = bill.Status,
-                    CreatedAt = bill.CreatedAt,
-                    PaidAt = bill.PaidAt
-                });
-            }
-
-            return new ServiceResult<List<BillResponseDTO>>
-            {
-                Message = "Bills Retreived Successfully",
-                Success = true,
-                Data = billsReponse
-            };
-
-        }
-
-        ServiceResult<List<BillResponseDTO>> IBillService.GetAll(int userId)
-        {
-            return GetAll(userId);
-        }
-
-        ServiceResult<BillResponseDTO> GetById(int userId , int billId)
-        {
-            var bills = billRepo.GetBillById(billId);
-
-            var billResponse = (new BillResponseDTO 
-            {
-                Id = bills.Id,
-                UserId = bills.UserId,
-                ProviderName = bills.ProviderName,
-                BillNumber = bills.BillNumber,
-                Amount = bills.Amount,
-                DueDate = bills.DueDate,
-                Status = bills.Status,
-                CreatedAt = bills.CreatedAt,
-                PaidAt = bills.PaidAt
-            });
-
             return new ServiceResult<BillResponseDTO>
             {
-                Message = "Bill Retreived Successfully",
-                Success = true,
-                Data = billResponse
+                Success = false,
+                Message = "Bill not found"
             };
         }
 
-        ServiceResult<BillResponseDTO> IBillService.GetById(int userId, int billId)
+        return new ServiceResult<BillResponseDTO>
         {
-            return GetById(userId, billId);
+            Success = true,
+            Message = "Bill retrieved successfully",
+            Data = MapToResponse(bill)
+        };
+    }
+
+    public async Task<ServiceResult<PayBillResponseDTO>> PayBillAsync(
+        int userId,
+        int billId,
+        PayBillRequestDTO requestDTO)
+    {
+        Bill? bill = await billRepo.GetByIdAndUserIdAsync(billId, userId);
+
+        if (bill is null)
+        {
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Bill not found"
+            };
         }
+
+        if (bill.Amount <= 0)
+        {
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Bill amount must be greater than zero"
+            };
+        }
+
+        if (bill.Status == BillStatus.Paid)
+        {
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Bill is already paid"
+            };
+        }
+
+        Account? account = await accountRepo.GetByIdAndUserIdAsync(requestDTO.SourceAccountId, userId);
+
+        if (account is null)
+        {
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Source account not found"
+            };
+        }
+
+        if (account.Balance < bill.Amount)
+        {
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Insufficient balance"
+            };
+        }
+
+        await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            account.Balance -= bill.Amount;
+            bill.Status = BillStatus.Paid;
+            bill.PaidAt = DateTime.UtcNow;
+
+            var transaction = new Transaction
+            {
+                UserId = userId,
+                AccountId = account.Id,
+                BillId = bill.Id,
+                Type = TransactionType.BillPayment,
+                Amount = bill.Amount,
+                Currency = account.Currency,
+                Status = TransactionStatus.Completed,
+                Reference = Guid.NewGuid().ToString("N"),
+                Note = $"Payment for {bill.ProviderName} bill {bill.BillNumber}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await transactionRepo.AddTransactionAsync(transaction);
+
+            await dbTransaction.CommitAsync();
+
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = true,
+                Message = "Bill paid successfully",
+                Data = new PayBillResponseDTO
+                {
+                    BillId = bill.Id,
+                    ProviderName = bill.ProviderName,
+                    Amount = transaction.Amount,
+                    Currency = transaction.Currency,
+                    Status = bill.Status.ToString(),
+                    PaidAt = bill.PaidAt.Value,
+                    TransactionReference = transaction.Reference
+                }
+            };
+        }
+        catch
+        {
+            await dbTransaction.RollbackAsync();
+
+            return new ServiceResult<PayBillResponseDTO>
+            {
+                Success = false,
+                Message = "Bill payment failed"
+            };
+        }
+    }
+
+    private static BillResponseDTO MapToResponse(Bill bill)
+    {
+        return new BillResponseDTO
+        {
+            Id = bill.Id,
+            ProviderName = bill.ProviderName,
+            BillNumber = bill.BillNumber,
+            Amount = bill.Amount,
+            DueDate = bill.DueDate,
+            Status = bill.Status.ToString(),
+            PaidAt = bill.PaidAt
+        };
     }
 }

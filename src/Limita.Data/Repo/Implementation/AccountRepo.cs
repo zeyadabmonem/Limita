@@ -1,7 +1,3 @@
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-using Microsoft.EntityFrameworkCore;
-
 namespace Limita.Data.Repo.Implementation;
 
 public class AccountRepo : IAccountRepo

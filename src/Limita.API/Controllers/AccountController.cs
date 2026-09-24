@@ -1,10 +1,3 @@
-using Limita.Business.Common;
-using Limita.Business.DTOs.Accounts;
-using Limita.Business.Services.Interface;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-
 namespace Limita.API.Controllers;
 
 [Authorize]

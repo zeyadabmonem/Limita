@@ -1,12 +1,4 @@
-﻿using Limita.Data.Entities;
-using Limita.Data.Entities.Enums;
-using Limita.Data.Repo.Interface;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Limita.Data.Repo.Implementation
+﻿namespace Limita.Data.Repo.Implementation
 {
     public class TransactionRepo : ITransactionRepo
     {

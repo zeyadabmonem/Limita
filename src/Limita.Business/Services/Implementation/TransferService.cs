@@ -1,12 +1,4 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Beneficiary;
-using Limita.Business.DTOs.Transfer;
-using Limita.Business.Services.Interface;
-using Limita.Data;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-
-namespace Limita.Business.Services.Implementation;
+﻿namespace Limita.Business.Services.Implementation;
 
 public class TransferService : ITransferService
 {

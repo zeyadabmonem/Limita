@@ -1,6 +1,3 @@
-using Limita.Data.Entities;
-using Microsoft.EntityFrameworkCore;
-
 namespace Limita.Data;
 
 public class LimitaDbContext : DbContext

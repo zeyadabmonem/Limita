@@ -1,35 +1,26 @@
-﻿using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-using Microsoft.EntityFrameworkCore;
+﻿namespace Limita.Data.Repo.Implementation;
 
-namespace Limita.Data.Repo.Implementation
+public class BillRepo : IBillRepo
 {
-    public class BillRepo : IBillRepo
+    private readonly LimitaDbContext dbContext;
+
+    public BillRepo(LimitaDbContext dbContext)
     {
-        private readonly LimitaDbContext _context;
-        public BillRepo(LimitaDbContext context)
-        {
-            _context = context;
-        }
+        this.dbContext = dbContext;
+    }
 
-        public List<Bill> GetAllBills(int userId)
-        {
-            var result = _context.Bills.Include(x => x.User).Where(x => x.UserId == userId).ToList();
-            if (result != null)
-            {
-                return result;
-            }
-            return null;
-        }
+    public async Task<List<Bill>> GetByUserIdAsync(int userId)
+    {
+        return await dbContext.Bills
+            .AsNoTracking()
+            .Where(b => b.UserId == userId)
+            .OrderByDescending(b => b.DueDate)
+            .ToListAsync();
+    }
 
-        public Bill GetBillById(int id)
-        {
-            var result = _context.Bills.Include(x => x.User).FirstOrDefault(x => x.Id == id);
-            if (result != null)
-            {
-                return result;
-            }
-            return null;
-        }
+    public async Task<Bill?> GetByIdAndUserIdAsync(int billId, int userId)
+    {
+        return await dbContext.Bills
+            .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId);
     }
 }
