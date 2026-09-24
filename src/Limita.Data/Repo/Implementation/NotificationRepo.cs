@@ -18,32 +18,15 @@ public class NotificationRepo : INotificationRepo
             .ToListAsync();
     }
 
-    public async Task<Notification?> GetByIdAndUserIdAsync(int notificationId, int userId)
-    {
-        return await dbContext.Notifications
-            .AsNoTracking()
-            .FirstOrDefaultAsync(notification =>
-                notification.Id == notificationId &&
-                notification.UserId == userId);
-    }
-
     public async Task<bool> MarkAsReadAsync(int notificationId, int userId)
     {
-        Notification? notification = await dbContext.Notifications
-            .FirstOrDefaultAsync(notification =>
+        int affectedRows = await dbContext.Notifications
+            .Where(notification =>
                 notification.Id == notificationId &&
-                notification.UserId == userId);
+                notification.UserId == userId)
+            .ExecuteUpdateAsync(setters =>
+                setters.SetProperty(notification => notification.IsRead, true));
 
-        if (notification is null)
-            return false;
-
-        if (notification.IsRead)
-            return true;
-
-        notification.IsRead = true;
-
-        await dbContext.SaveChangesAsync();
-
-        return true;
+        return affectedRows > 0;
     }
 }
