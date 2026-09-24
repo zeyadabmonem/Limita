@@ -1,71 +1,72 @@
-﻿namespace Limita.API.Controllers
+namespace Limita.API.Controllers;
+
+[Authorize]
+[Route("api/v1/beneficiaries")]
+[ApiController]
+public class BeneficiaryController : ControllerBase
 {
-    [Authorize]
-    [Route("api/v1/beneficiaries")]
-    [ApiController]
-    public class BeneficiaryController : ControllerBase
+    private readonly IBeneficiaryService beneficiaryService;
+
+    public BeneficiaryController(IBeneficiaryService beneficiaryService)
     {
-        private readonly IBeneficiaryService service;
+        this.beneficiaryService = beneficiaryService;
+    }
 
-        public BeneficiaryController(IBeneficiaryService service) 
-        {
-            
-            this.service = service;
-        }
-        [HttpPost]
-        public async Task<ActionResult> AddBeneficiary([FromBody] AddBeneficiaryRequestDTO requestDTO)
-        {
-            ServiceResult<BeneficiaryResponseDTO> responseDTO = await service.AddBeneficiary(User.GetUserId(),requestDTO);
-            if(responseDTO.Success)
-              return  Ok(responseDTO.Data);
+    [HttpPost]
+    public async Task<ActionResult<BeneficiaryResponseDTO>> AddBeneficiary(
+        [FromBody] AddBeneficiaryRequestDTO requestDTO)
+    {
+        ServiceResult<BeneficiaryResponseDTO> result =
+            await beneficiaryService.AddBeneficiary(User.GetUserId(), requestDTO);
 
-            return BadRequest(responseDTO.Message);
+        return result.ToActionResult(this);
+    }
 
-        }
-        [HttpGet]
-        public async Task<ActionResult>GetAll()
-        {
-            ServiceResult<List<BeneficiaryResponseDTO>> responseDTO = await service.GetAllBeneficiaries(User.GetUserId());
-            if(responseDTO.Success)
-              return  Ok(responseDTO.Data);
+    [HttpGet]
+    public async Task<ActionResult<List<BeneficiaryResponseDTO>>> GetAll()
+    {
+        ServiceResult<List<BeneficiaryResponseDTO>> result =
+            await beneficiaryService.GetAllBeneficiaries(User.GetUserId());
 
-            return BadRequest(responseDTO.Message);
+        return result.ToActionResult(this);
+    }
 
-        }
+    [HttpGet("{beneficiaryId:int}")]
+    public async Task<ActionResult<BeneficiaryResponseDTO>> GetById(int beneficiaryId)
+    {
+        ServiceResult<BeneficiaryResponseDTO> result =
+            await beneficiaryService.GetBeneficiaryById(
+                User.GetUserId(),
+                beneficiaryId);
 
-        [HttpGet("{beneficiaryId}")]
-        public async Task<ActionResult> GetById(int beneficiaryId)
-        {
-            ServiceResult<BeneficiaryResponseDTO> responseDTO = await service.GetBeneficiaryById(User.GetUserId(),beneficiaryId);
-            if(responseDTO.Success)
-              return  Ok(responseDTO.Data);
+        return result.ToActionResult(this);
+    }
 
-            return BadRequest(responseDTO.Message);
+    [HttpPut("{beneficiaryId:int}")]
+    public async Task<ActionResult<BeneficiaryResponseDTO>> UpdateBeneficiary(
+        int beneficiaryId,
+        [FromBody] UpdateBeneficiaryRequestDTO requestDTO)
+    {
+        ServiceResult<BeneficiaryResponseDTO> result =
+            await beneficiaryService.UpdateBeneficiary(
+                User.GetUserId(),
+                beneficiaryId,
+                requestDTO);
 
-        }
+        return result.ToActionResult(this);
+    }
 
-        [HttpPut("{beneficiaryId}")]
-        public async Task<ActionResult> UpdateBeneficiary( int beneficiaryId, [FromBody] UpdateBeneficiaryRequestDTO requestDTO)
-        {
-            ServiceResult<BeneficiaryResponseDTO> responseDTO = await service.UpdateBeneficiary(User.GetUserId(), beneficiaryId, requestDTO);
-            if(responseDTO.Success)
-              return  Ok(responseDTO.Data);
+    [HttpDelete("{beneficiaryId:int}")]
+    public async Task<IActionResult> DeleteBeneficiary(int beneficiaryId)
+    {
+        ServiceResult<bool> result =
+            await beneficiaryService.DeleteBeneficiary(
+                User.GetUserId(),
+                beneficiaryId);
 
-            return BadRequest(responseDTO.Message);
+        if (!result.Success)
+            return result.ToActionResult(this);
 
-        }
-
-        [HttpDelete("{beneficiaryId}")]
-        public async Task<ActionResult> DeleteBeneficiary( int beneficiaryId)
-        {
-            ServiceResult<bool> responseDTO = await service.DeleteBeneficiary(User.GetUserId(),beneficiaryId);
-            if(responseDTO.Success)
-              return  Ok(responseDTO.Message);
-
-            return BadRequest(responseDTO.Message);
-
-        }
-
-
+        return NoContent();
     }
 }

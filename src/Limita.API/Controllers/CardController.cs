@@ -1,33 +1,32 @@
-﻿namespace Limita.API.Controllers
+namespace Limita.API.Controllers;
+
+[Authorize]
+[Route("api/v1/cards")]
+[ApiController]
+public class CardController : ControllerBase
 {
-    [Authorize]
-    [Route("api/v1/cards")]
-    [ApiController]
-    public class CardController : ControllerBase
+    private readonly ICardService cardService;
+
+    public CardController(ICardService cardService)
     {
-        private readonly ICardService service;
+        this.cardService = cardService;
+    }
 
-        public CardController(ICardService service) 
-        {
-            this.service = service;
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<CardResponseDTO>>> GetAllCards()
+    {
+        ServiceResult<List<CardResponseDTO>> result =
+            await cardService.GetAll(User.GetUserId());
 
-        [HttpGet]
-        public async Task<ActionResult<List<CardResponseDTO>>> GetAllCards()
-        {
-            var result = await service.GetAll(User.GetUserId());
-            if(result.Success)
-                return Ok(result.Data);
-            return BadRequest(result.Message);
-        }
+        return result.ToActionResult(this);
+    }
 
-        [HttpGet("{cardId}")]
-        public async Task<ActionResult<CardResponseDTO>> GetCardById(int cardId)
-        {
-            var result = await service.GetById(User.GetUserId(),cardId);
-            if(result.Success)
-                return Ok(result.Data);
-            return BadRequest(result.Message);
-        }
+    [HttpGet("{cardId:int}")]
+    public async Task<ActionResult<CardResponseDTO>> GetCardById(int cardId)
+    {
+        ServiceResult<CardResponseDTO> result =
+            await cardService.GetById(User.GetUserId(), cardId);
+
+        return result.ToActionResult(this);
     }
 }

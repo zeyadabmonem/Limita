@@ -13,30 +13,24 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(List<NotificationResponseDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<NotificationResponseDTO>>> GetNotifications()
     {
-        var response = await notificationService.GetNotificationsAsync(User.GetUserId());
+        ServiceResult<List<NotificationResponseDTO>> result =
+            await notificationService.GetNotificationsAsync(User.GetUserId());
 
-        if (!response.Success)
-            return BadRequest(response.Message);
-
-        return Ok(response.Data);
+        return result.ToActionResult(this);
     }
 
     [HttpPatch("{notificationId:int}/read")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> MarkAsRead(int notificationId)
     {
-        var response = await notificationService.MarkAsReadAsync(
-            User.GetUserId(),
-            notificationId);
+        ServiceResult<bool> result =
+            await notificationService.MarkAsReadAsync(
+                User.GetUserId(),
+                notificationId);
 
-        if (!response.Success)
-            return BadRequest(response.Message);
+        if (!result.Success)
+            return result.ToActionResult(this);
 
         return NoContent();
     }
