@@ -1,62 +1,63 @@
-﻿namespace Limita.Data.Repo.Implementation
+namespace Limita.Data.Repo.Implementation;
+
+public class BeneficiaryRepo : IBeneficiaryRepo
 {
-    public class BeneficiaryRepo : IBeneficiaryRepo
+    private readonly LimitaDbContext dbContext;
+
+    public BeneficiaryRepo(LimitaDbContext dbContext)
     {
-        private readonly LimitaDbContext dbContext;
+        this.dbContext = dbContext;
+    }
 
-        public BeneficiaryRepo(LimitaDbContext dbContext)
-        {
-            this.dbContext = dbContext;
-        }
-        public async Task<int> AddBeneficiaryAsync(Beneficiary beneficiary)
-        {
-            await dbContext.Beneficiaries.AddAsync(beneficiary);
-            await dbContext.SaveChangesAsync();
-            return beneficiary.Id;
-        }
+    public async Task<int> AddBeneficiaryAsync(Beneficiary beneficiary)
+    {
+        await dbContext.Beneficiaries.AddAsync(beneficiary);
+        await dbContext.SaveChangesAsync();
 
-        public async Task<bool> DeleteBeneficiaryAsync(int beneficiaryId)
-        {
-            var b = await GetBeneficiaryAsync(beneficiaryId);
-            if (b != null)
-            {
-                dbContext.Beneficiaries.Remove(b);
-                await dbContext.SaveChangesAsync();
-                return true;
-            }
+        return beneficiary.Id;
+    }
 
+    public async Task<bool> DeleteBeneficiaryAsync(int beneficiaryId)
+    {
+        Beneficiary? beneficiary = await GetBeneficiaryAsync(beneficiaryId);
+
+        if (beneficiary is null)
             return false;
 
-        }
+        dbContext.Beneficiaries.Remove(beneficiary);
+        await dbContext.SaveChangesAsync();
 
-        public async Task<bool> ExistingByUseridAndIdentifierAsync(int userId, string accountIdentifier)
-        {
-            if (await dbContext.Beneficiaries.AnyAsync(b => b.UserId == userId && b.AccountIdentifier == accountIdentifier))
-                return true;
-            return false;
-        }
+        return true;
+    }
 
-        public async Task<List<Beneficiary>> GetBeneficiariesAsync(int userId)
-        {
-            return await dbContext.Beneficiaries.Where(b => b.UserId == userId).ToListAsync();
+    public async Task<bool> ExistingByUseridAndIdentifierAsync(
+        int userId,
+        string accountIdentifier)
+    {
+        return await dbContext.Beneficiaries.AnyAsync(beneficiary =>
+            beneficiary.UserId == userId &&
+            beneficiary.AccountIdentifier == accountIdentifier);
+    }
 
-        }
+    public async Task<List<Beneficiary>> GetBeneficiariesAsync(int userId)
+    {
+        return await dbContext.Beneficiaries
+            .AsNoTracking()
+            .Where(beneficiary => beneficiary.UserId == userId)
+            .ToListAsync();
+    }
 
-        public async Task<Beneficiary?> GetBeneficiaryAsync(int beneficiaryId)
-        {
-            var beneficiary = await dbContext.Beneficiaries.FirstOrDefaultAsync(b => b.Id == beneficiaryId);
-            return beneficiary == null ? null : beneficiary;
-        }
+    public async Task<Beneficiary?> GetBeneficiaryAsync(int beneficiaryId)
+    {
+        return await dbContext.Beneficiaries
+            .FirstOrDefaultAsync(beneficiary => beneficiary.Id == beneficiaryId);
+    }
 
-        public async Task<bool> UpdateBeneficiaryAsync(Beneficiary beneficiary)
-        {
-            if (beneficiary == null)
-                return false;
+    public async Task<bool> UpdateBeneficiaryAsync(Beneficiary beneficiary)
+    {
+        dbContext.Beneficiaries.Update(beneficiary);
+        await dbContext.SaveChangesAsync();
 
-            dbContext.Beneficiaries.Update(beneficiary);
-            await dbContext.SaveChangesAsync();
-            return true;
-        }
-        
+        return true;
     }
 }
