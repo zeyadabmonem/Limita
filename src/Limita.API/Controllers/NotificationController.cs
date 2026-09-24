@@ -26,7 +26,7 @@ public class NotificationController : ControllerBase
     }
 
     [HttpPatch("{notificationId:int}/read")]
-    [ProducesResponseType(StatusCodes.Status200200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> MarkAsRead(int notificationId)
@@ -38,6 +38,6 @@ public class NotificationController : ControllerBase
         if (!response.Success)
             return BadRequest(response.Message);
 
-        return Ok(response.Message);
+        return NoContent();
     }
 }

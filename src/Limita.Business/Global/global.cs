@@ -10,6 +10,7 @@ global using Limita.Business.DTOs.Auth;
 global using Limita.Business.DTOs.Profile;
 global using Limita.Business.DTOs.Cards;
 global using Limita.Business.DTOs.Bill;
+global using Limita.Business.DTOs.Notification;
 global using Limita.Business.DTOs.Beneficiary;
 global using System.Text;
 global using Limita.Business.DTOs.Accounts;

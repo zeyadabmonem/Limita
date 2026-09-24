@@ -48,6 +48,8 @@ public partial class Program
         builder.Services.AddScoped<ITransactionService, TransactionService>();
         builder.Services.AddScoped<IBillRepo, BillRepo>();
         builder.Services.AddScoped<IBillService, BillService>();
+        builder.Services.AddScoped<INotificationRepo, NotificationRepo>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
 
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
