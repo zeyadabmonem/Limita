@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
 namespace Limita.Business.DTOs.Bill;
 
 public class PayBillRequestDTO
 {
-    /// <summary>The account the bill amount is debited from.</summary>
-    [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "Source account id must be greater than zero")]
     public int SourceAccountId { get; set; }
 }

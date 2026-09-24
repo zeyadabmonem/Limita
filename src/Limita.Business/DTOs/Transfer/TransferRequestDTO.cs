@@ -1,20 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+namespace Limita.Business.DTOs.Transfer;
 
-namespace Limita.Business.DTOs.Transfer
+public class TransferRequestDTO
 {
-    public class TransferRequestDTO
-    {
-        [Required]
-        public int SourceAccountId { get; set; }
-        [Required]
-        public int BeneficiaryId { get; set; }
-        [Required]
-        public decimal Amount { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Source account id must be greater than zero")]
+    public int SourceAccountId { get; set; }
 
-        public string? Note { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Beneficiary id must be greater than zero")]
+    public int BeneficiaryId { get; set; }
 
-    }
+    [Range(typeof(decimal), "0.01", "79228162514264337593543950335",
+        ErrorMessage = "Amount must be greater than zero")]
+    public decimal Amount { get; set; }
+
+    public string? Note { get; set; }
 }
