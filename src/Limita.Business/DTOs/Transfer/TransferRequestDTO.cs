@@ -12,5 +12,6 @@ public class TransferRequestDTO
         ErrorMessage = "Amount must be greater than zero")]
     public decimal Amount { get; set; }
 
+    [StringLength(500)]
     public string? Note { get; set; }
 }
