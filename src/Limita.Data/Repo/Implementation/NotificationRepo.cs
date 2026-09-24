@@ -29,4 +29,10 @@ public class NotificationRepo : INotificationRepo
 
         return affectedRows > 0;
     }
+
+    public async Task AddAsync(Notification notification)
+    {
+        await dbContext.Notifications.AddAsync(notification);
+        await dbContext.SaveChangesAsync();
+    }
 }

@@ -28,7 +28,8 @@ public class NotificationService : INotificationService
             return new ServiceResult<bool>
             {
                 Success = false,
-                Message = "Notification id must be greater than zero"
+                Message = "Notification id must be greater than zero",
+                ErrorCode = ServiceErrorCode.Validation
             };
         }
 
@@ -39,7 +40,8 @@ public class NotificationService : INotificationService
             return new ServiceResult<bool>
             {
                 Success = false,
-                Message = "Notification not found"
+                Message = "Notification not found",
+                ErrorCode = ServiceErrorCode.NotFound
             };
         }
 

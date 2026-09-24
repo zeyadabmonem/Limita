@@ -1,12 +1,3 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Bill;
-using Limita.Business.DTOs.Bills;
-using Limita.Business.Services.Interface;
-using Limita.Data;
-using Limita.Data.Entities;
-using Limita.Data.Entities.Enums;
-using Limita.Data.Repo.Interface;
-
 namespace Limita.Business.Services.Implementation;
 
 public class BillService : IBillService
@@ -15,17 +6,20 @@ public class BillService : IBillService
     private readonly IBillRepo billRepo;
     private readonly IAccountRepo accountRepo;
     private readonly ITransactionRepo transactionRepo;
+    private readonly INotificationRepo notificationRepo;
 
     public BillService(
         LimitaDbContext dbContext,
         IBillRepo billRepo,
         IAccountRepo accountRepo,
-        ITransactionRepo transactionRepo)
+        ITransactionRepo transactionRepo,
+        INotificationRepo notificationRepo)
     {
         this.dbContext = dbContext;
         this.billRepo = billRepo;
         this.accountRepo = accountRepo;
         this.transactionRepo = transactionRepo;
+        this.notificationRepo = notificationRepo;
     }
 
     public async Task<ServiceResult<List<BillResponseDTO>>> GetBillsAsync(int userId)
@@ -42,16 +36,13 @@ public class BillService : IBillService
 
     public async Task<ServiceResult<BillResponseDTO>> GetBillByIdAsync(int userId, int billId)
     {
+        if (billId <= 0)
+            return Failure<BillResponseDTO>("Bill id must be greater than zero", ServiceErrorCode.Validation);
+
         Bill? bill = await billRepo.GetByIdAndUserIdAsync(billId, userId);
 
         if (bill is null)
-        {
-            return new ServiceResult<BillResponseDTO>
-            {
-                Success = false,
-                Message = "Bill not found"
-            };
-        }
+            return Failure<BillResponseDTO>("Bill not found", ServiceErrorCode.NotFound);
 
         return new ServiceResult<BillResponseDTO>
         {
@@ -66,64 +57,45 @@ public class BillService : IBillService
         int billId,
         PayBillRequestDTO requestDTO)
     {
+        if (billId <= 0 || requestDTO.SourceAccountId <= 0)
+            return Failure<PayBillResponseDTO>(
+                "Bill id and source account id must be greater than zero",
+                ServiceErrorCode.Validation);
+
         Bill? bill = await billRepo.GetByIdAndUserIdAsync(billId, userId);
 
         if (bill is null)
-        {
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Bill not found"
-            };
-        }
+            return Failure<PayBillResponseDTO>("Bill not found", ServiceErrorCode.NotFound);
 
         if (bill.Amount <= 0)
-        {
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Bill amount must be greater than zero"
-            };
-        }
+            return Failure<PayBillResponseDTO>("Bill amount must be greater than zero", ServiceErrorCode.Validation);
 
         if (bill.Status == BillStatus.Paid)
-        {
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Bill is already paid"
-            };
-        }
+            return Failure<PayBillResponseDTO>("Bill is already paid", ServiceErrorCode.Conflict);
 
-        Account? account = await accountRepo.GetByIdAndUserIdAsync(requestDTO.SourceAccountId, userId);
+        Account? account = await accountRepo.GetByIdAndUserIdAsync(
+            requestDTO.SourceAccountId,
+            userId);
 
         if (account is null)
-        {
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Source account not found"
-            };
-        }
+            return Failure<PayBillResponseDTO>("Source account not found", ServiceErrorCode.NotFound);
 
         if (account.Balance < bill.Amount)
-        {
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Insufficient balance"
-            };
-        }
+            return Failure<PayBillResponseDTO>("Insufficient balance", ServiceErrorCode.UnprocessableEntity);
 
-        await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+        await using var dbTransaction =
+            await dbContext.Database.BeginTransactionAsync();
 
         try
         {
+            DateTime paidAt = DateTime.UtcNow;
+            string transactionReference = Guid.NewGuid().ToString("N");
+
             account.Balance -= bill.Amount;
             bill.Status = BillStatus.Paid;
-            bill.PaidAt = DateTime.UtcNow;
+            bill.PaidAt = paidAt;
 
-            var transaction = new Transaction
+            Transaction transaction = new()
             {
                 UserId = userId,
                 AccountId = account.Id,
@@ -132,13 +104,23 @@ public class BillService : IBillService
                 Amount = bill.Amount,
                 Currency = account.Currency,
                 Status = TransactionStatus.Completed,
-                Reference = Guid.NewGuid().ToString("N"),
+                Reference = transactionReference,
                 Note = $"Payment for {bill.ProviderName} bill {bill.BillNumber}",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = paidAt
             };
 
             await transactionRepo.AddTransactionAsync(transaction);
 
+            Notification notification = new()
+            {
+                UserId = userId,
+                Title = "Bill payment successful",
+                Message = $"{bill.ProviderName} bill {bill.BillNumber} was paid successfully.",
+                IsRead = false,
+                CreatedAt = paidAt
+            };
+
+            await notificationRepo.AddAsync(notification);
             await dbTransaction.CommitAsync();
 
             return new ServiceResult<PayBillResponseDTO>
@@ -152,21 +134,31 @@ public class BillService : IBillService
                     Amount = transaction.Amount,
                     Currency = transaction.Currency,
                     Status = bill.Status.ToString(),
-                    PaidAt = bill.PaidAt.Value,
-                    TransactionReference = transaction.Reference
+                    PaidAt = paidAt,
+                    TransactionReference = transactionReference
                 }
             };
         }
-        catch
+        catch (Exception)
         {
             await dbTransaction.RollbackAsync();
 
-            return new ServiceResult<PayBillResponseDTO>
-            {
-                Success = false,
-                Message = "Bill payment failed"
-            };
+            return Failure<PayBillResponseDTO>(
+                "Bill payment failed",
+                ServiceErrorCode.Unexpected);
         }
+    }
+
+    private static ServiceResult<T> Failure<T>(
+        string message,
+        ServiceErrorCode errorCode)
+    {
+        return new ServiceResult<T>
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
     }
 
     private static BillResponseDTO MapToResponse(Bill bill)
