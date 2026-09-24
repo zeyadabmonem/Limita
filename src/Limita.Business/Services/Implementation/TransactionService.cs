@@ -1,10 +1,3 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Transaction;
-using Limita.Business.DTOs.Transactions;
-using Limita.Business.Services.Interface;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-
 namespace Limita.Business.Services.Implementation;
 
 public class TransactionService : ITransactionService
@@ -17,44 +10,40 @@ public class TransactionService : ITransactionService
     }
 
     public async Task<ServiceResult<List<TransactionResponseDTO>>> GetTransactionsAsync(
-        int userId,TransactionFilterDTO transactionFilter)
+        int userId,
+        TransactionFilterDTO transactionFilter)
     {
         List<Transaction> transactions =
-            await transactionRepo.GetTransactionsByUserIdAsync(userId, transactionFilter.Type, transactionFilter.Status, transactionFilter.Date);
-
-        List<TransactionResponseDTO> response =
-            transactions.Select(MapToResponse).ToList();
+            await transactionRepo.GetTransactionsByUserIdAsync(
+                userId,
+                transactionFilter.Type,
+                transactionFilter.Status,
+                transactionFilter.Date);
 
         return new ServiceResult<List<TransactionResponseDTO>>
         {
             Success = true,
             Message = "Transactions retrieved successfully",
-            Data = response
+            Data = transactions.Select(MapToResponse).ToList()
         };
     }
 
-
-    public async Task<ServiceResult<TransactionResponseDTO>>
-      GetTransactionByIdAsync(
-          int userId,
-          int transactionId)
+    public async Task<ServiceResult<TransactionResponseDTO>> GetTransactionByIdAsync(
+        int userId,
+        int transactionId)
     {
-
-
+        if (transactionId <= 0)
+            return Failure<TransactionResponseDTO>(
+                "Transaction id must be greater than zero",
+                ServiceErrorCode.Validation);
 
         Transaction? transaction =
-            await transactionRepo.GetTransactionByIdAsync(
-                transactionId     );
+            await transactionRepo.GetTransactionByIdAsync(transactionId);
 
-
-        if (transaction is null || userId != transaction.UserId)
-        {
-            return new ServiceResult<TransactionResponseDTO>
-            {
-                Success = false,
-                Message = "Transaction not found"
-            };
-        }
+        if (transaction is null || transaction.UserId != userId)
+            return Failure<TransactionResponseDTO>(
+                "Transaction not found",
+                ServiceErrorCode.NotFound);
 
         return new ServiceResult<TransactionResponseDTO>
         {
@@ -64,12 +53,18 @@ public class TransactionService : ITransactionService
         };
     }
 
-    private static TransactionResponseDTO MapToResponse(
-        Transaction transaction)
-    {
-        return new TransactionResponseDTO
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
         {
-             Id = transaction.Id,
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
+
+    private static TransactionResponseDTO MapToResponse(Transaction transaction) =>
+        new()
+        {
+            Id = transaction.Id,
             AccountId = transaction.AccountId,
             Amount = transaction.Amount,
             Currency = transaction.Currency,
@@ -79,5 +74,4 @@ public class TransactionService : ITransactionService
             CreatedAt = transaction.CreatedAt,
             BeneficiaryName = transaction.Beneficiary?.Name
         };
-    }
 }

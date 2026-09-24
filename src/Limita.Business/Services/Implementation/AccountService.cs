@@ -1,9 +1,3 @@
-using Limita.Business.Common;
-using Limita.Business.DTOs.Accounts;
-using Limita.Business.Services.Interface;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-
 namespace Limita.Business.Services.Implementation;
 
 public class AccountService : IAccountService
@@ -22,27 +16,43 @@ public class AccountService : IAccountService
         return new ServiceResult<List<AccountResponseDTO>>
         {
             Success = true,
+            Message = "Accounts retrieved successfully",
             Data = accounts.Select(MapToResponse).ToList()
         };
     }
 
     public async Task<ServiceResult<AccountResponseDTO>> GetAccountAsync(int userId, int accountId)
     {
-        Account? account = await accountRepo.GetByIdAndUserIdAsync(accountId, userId);
-        if (account == null)
-            return new ServiceResult<AccountResponseDTO> { Success = false, Message = "Account not found" };
+        if (accountId <= 0)
+            return Failure<AccountResponseDTO>("Account id must be greater than zero", ServiceErrorCode.Validation);
 
-        return new ServiceResult<AccountResponseDTO> { Success = true, Data = MapToResponse(account) };
+        Account? account = await accountRepo.GetByIdAndUserIdAsync(accountId, userId);
+
+        if (account is null)
+            return Failure<AccountResponseDTO>("Account not found", ServiceErrorCode.NotFound);
+
+        return new ServiceResult<AccountResponseDTO>
+        {
+            Success = true,
+            Message = "Account retrieved successfully",
+            Data = MapToResponse(account)
+        };
     }
 
-    private static AccountResponseDTO MapToResponse(Account account)
-    {
-        return new AccountResponseDTO
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
+
+    private static AccountResponseDTO MapToResponse(Account account) =>
+        new()
         {
             Id = account.Id,
             Balance = account.Balance,
             Currency = account.Currency,
             Status = account.Status.ToString()
         };
-    }
 }

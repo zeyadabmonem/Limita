@@ -1,91 +1,161 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Beneficiary;
-using Limita.Business.Services.Interface;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace Limita.Business.Services.Implementation;
 
-namespace Limita.Business.Services.Implementation
+public class BeneficiaryService : IBeneficiaryService
 {
-    public class BeneficiaryService : IBeneficiaryService
+    private readonly IBeneficiaryRepo beneficiaryRepo;
+
+    public BeneficiaryService(IBeneficiaryRepo beneficiaryRepo)
     {
-        private readonly IBeneficiaryRepo beneficiaryRepo;
-
-        public BeneficiaryService(IBeneficiaryRepo beneficiaryRepo)
-        {
-            this.beneficiaryRepo = beneficiaryRepo;
-        }
-        public async Task<ServiceResult<BeneficiaryResponseDTO>> AddBeneficiary(int userId, AddBeneficiaryRequestDTO requestDTO)
-        {
-            if ( await beneficiaryRepo.ExistingByUseridAndIdentifierAsync(userId, requestDTO.AccountIdentifier)) 
-                return new ServiceResult<BeneficiaryResponseDTO> { Success = false, Message = "Beneficiary already exists" };
-
-            var beneficiary = new Beneficiary { AccountIdentifier = requestDTO.AccountIdentifier, 
-                CreatedAt = DateTime.UtcNow,
-                Name = requestDTO.Name,
-                UserId = userId };
-
-            int id = await beneficiaryRepo.AddBeneficiaryAsync(beneficiary);
-
-            var data = new BeneficiaryResponseDTO { AccountIdentifier = requestDTO.AccountIdentifier, Id = id, Name = requestDTO.Name };
-
-            return new ServiceResult<BeneficiaryResponseDTO> { Success = true, Message = "Beneficiary created successfully", Data = data };
-        }
-
-        public async Task<ServiceResult<bool>> DeleteBeneficiary(int userId, int beneficiaryId)
-        {
-            var beneficairy = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
-
-            if (beneficairy == null || beneficairy.UserId != userId)
-                return new ServiceResult<bool> { Success = false, Message = "Invalid operation" };
-
-            await beneficiaryRepo.DeleteBeneficiaryAsync(beneficiaryId);
-
-            return new ServiceResult<bool> { Success = true, Message = "beneficairy deleted successfully" };
-        }
-
-        public async Task<ServiceResult<List<BeneficiaryResponseDTO>>> GetAllBeneficiaries(int userId)
-        {
-            var beneficiaries = await beneficiaryRepo.GetBeneficiariesAsync(userId);
-            List<BeneficiaryResponseDTO> dtos = new();
-            foreach (var b in beneficiaries)
-            {
-                dtos.Add(new BeneficiaryResponseDTO { Id = b.Id, AccountIdentifier = b.AccountIdentifier, Name = b.Name });
-            }
-
-            return  new ServiceResult<List<BeneficiaryResponseDTO>> { Success = true, Message = "Data restored successfully", Data = dtos };
-        }
-
-        public async Task<ServiceResult<BeneficiaryResponseDTO>> GetBeneficiaryById(int userId, int beneficiaryId)
-        {
-            var beneficairy = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
-            
-            if(beneficairy == null || beneficairy.UserId != userId)
-                return new ServiceResult<BeneficiaryResponseDTO> { Success = false, Message = "Invalid operation" };
-
-           
-            return new ServiceResult<BeneficiaryResponseDTO> { Success = true, Message = "beneficairy retrieved successfully" , Data =new BeneficiaryResponseDTO { Id= beneficairy.Id , AccountIdentifier = beneficairy.AccountIdentifier, Name = beneficairy .Name} };
-
-        }
-
-        public async Task<ServiceResult<BeneficiaryResponseDTO>> UpdateBeneficiary(int userId, int beneficiaryId, UpdateBeneficiaryRequestDTO requestDTO)
-        {
-            var beneficairy = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
-
-
-
-            if (beneficairy == null || beneficairy.UserId != userId)
-                return new ServiceResult<BeneficiaryResponseDTO> { Success = false, Message = "Invalid operation" };
-
-            beneficairy.AccountIdentifier = requestDTO.AccountIdentifier;
-            beneficairy.Name = requestDTO.Name;
-
-           await beneficiaryRepo.UpdateBeneficiaryAsync(beneficairy);
-
-            return new ServiceResult<BeneficiaryResponseDTO> { Success = true, Message = "beneficairy updated successfully", Data = new BeneficiaryResponseDTO { Id = beneficairy.Id, AccountIdentifier = requestDTO.AccountIdentifier, Name = requestDTO.Name } };
-
-        }
+        this.beneficiaryRepo = beneficiaryRepo;
     }
+
+    public async Task<ServiceResult<BeneficiaryResponseDTO>> AddBeneficiary(
+        int userId,
+        AddBeneficiaryRequestDTO requestDTO)
+    {
+        if (string.IsNullOrWhiteSpace(requestDTO.Name) ||
+            string.IsNullOrWhiteSpace(requestDTO.AccountIdentifier))
+        {
+            return Failure<BeneficiaryResponseDTO>(
+                "Name and account identifier are required",
+                ServiceErrorCode.Validation);
+        }
+
+        if (await beneficiaryRepo.ExistingByUseridAndIdentifierAsync(
+                userId,
+                requestDTO.AccountIdentifier))
+        {
+            return Failure<BeneficiaryResponseDTO>(
+                "Beneficiary already exists",
+                ServiceErrorCode.Conflict);
+        }
+
+        Beneficiary beneficiary = new()
+        {
+            AccountIdentifier = requestDTO.AccountIdentifier,
+            CreatedAt = DateTime.UtcNow,
+            Name = requestDTO.Name,
+            UserId = userId
+        };
+
+        int id = await beneficiaryRepo.AddBeneficiaryAsync(beneficiary);
+
+        return new ServiceResult<BeneficiaryResponseDTO>
+        {
+            Success = true,
+            Message = "Beneficiary created successfully",
+            Data = new BeneficiaryResponseDTO
+            {
+                AccountIdentifier = beneficiary.AccountIdentifier,
+                Id = id,
+                Name = beneficiary.Name
+            }
+        };
+    }
+
+    public async Task<ServiceResult<bool>> DeleteBeneficiary(int userId, int beneficiaryId)
+    {
+        if (beneficiaryId <= 0)
+            return Failure<bool>("Beneficiary id must be greater than zero", ServiceErrorCode.Validation);
+
+        Beneficiary? beneficiary = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
+
+        if (beneficiary is null || beneficiary.UserId != userId)
+            return Failure<bool>("Beneficiary not found", ServiceErrorCode.NotFound);
+
+        await beneficiaryRepo.DeleteBeneficiaryAsync(beneficiaryId);
+
+        return new ServiceResult<bool>
+        {
+            Success = true,
+            Message = "Beneficiary deleted successfully",
+            Data = true
+        };
+    }
+
+    public async Task<ServiceResult<List<BeneficiaryResponseDTO>>> GetAllBeneficiaries(int userId)
+    {
+        List<Beneficiary> beneficiaries = await beneficiaryRepo.GetBeneficiariesAsync(userId);
+
+        return new ServiceResult<List<BeneficiaryResponseDTO>>
+        {
+            Success = true,
+            Message = "Beneficiaries retrieved successfully",
+            Data = beneficiaries.Select(MapToResponse).ToList()
+        };
+    }
+
+    public async Task<ServiceResult<BeneficiaryResponseDTO>> GetBeneficiaryById(
+        int userId,
+        int beneficiaryId)
+    {
+        if (beneficiaryId <= 0)
+            return Failure<BeneficiaryResponseDTO>(
+                "Beneficiary id must be greater than zero",
+                ServiceErrorCode.Validation);
+
+        Beneficiary? beneficiary = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
+
+        if (beneficiary is null || beneficiary.UserId != userId)
+            return Failure<BeneficiaryResponseDTO>("Beneficiary not found", ServiceErrorCode.NotFound);
+
+        return new ServiceResult<BeneficiaryResponseDTO>
+        {
+            Success = true,
+            Message = "Beneficiary retrieved successfully",
+            Data = MapToResponse(beneficiary)
+        };
+    }
+
+    public async Task<ServiceResult<BeneficiaryResponseDTO>> UpdateBeneficiary(
+        int userId,
+        int beneficiaryId,
+        UpdateBeneficiaryRequestDTO requestDTO)
+    {
+        if (beneficiaryId <= 0)
+            return Failure<BeneficiaryResponseDTO>(
+                "Beneficiary id must be greater than zero",
+                ServiceErrorCode.Validation);
+
+        if (string.IsNullOrWhiteSpace(requestDTO.Name) ||
+            string.IsNullOrWhiteSpace(requestDTO.AccountIdentifier))
+        {
+            return Failure<BeneficiaryResponseDTO>(
+                "Name and account identifier are required",
+                ServiceErrorCode.Validation);
+        }
+
+        Beneficiary? beneficiary = await beneficiaryRepo.GetBeneficiaryAsync(beneficiaryId);
+
+        if (beneficiary is null || beneficiary.UserId != userId)
+            return Failure<BeneficiaryResponseDTO>("Beneficiary not found", ServiceErrorCode.NotFound);
+
+        beneficiary.AccountIdentifier = requestDTO.AccountIdentifier;
+        beneficiary.Name = requestDTO.Name;
+
+        await beneficiaryRepo.UpdateBeneficiaryAsync(beneficiary);
+
+        return new ServiceResult<BeneficiaryResponseDTO>
+        {
+            Success = true,
+            Message = "Beneficiary updated successfully",
+            Data = MapToResponse(beneficiary)
+        };
+    }
+
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
+
+    private static BeneficiaryResponseDTO MapToResponse(Beneficiary beneficiary) =>
+        new()
+        {
+            Id = beneficiary.Id,
+            AccountIdentifier = beneficiary.AccountIdentifier,
+            Name = beneficiary.Name
+        };
 }

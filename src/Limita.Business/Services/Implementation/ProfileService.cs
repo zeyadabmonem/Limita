@@ -1,9 +1,3 @@
-using Limita.Business.Common;
-using Limita.Business.DTOs.Profile;
-using Limita.Business.Services.Interface;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-
 namespace Limita.Business.Services.Implementation;
 
 public class ProfileService : IProfileService
@@ -18,21 +12,46 @@ public class ProfileService : IProfileService
     public async Task<ServiceResult<ProfileResponseDTO>> GetProfileAsync(int userId)
     {
         User? user = await userRepo.GetByIdAsync(userId);
-        if (user == null)
-            return new ServiceResult<ProfileResponseDTO> { Success = false, Message = "User not found" };
 
-        return new ServiceResult<ProfileResponseDTO> { Success = true, Data = MapToResponse(user) };
+        if (user is null)
+            return Failure<ProfileResponseDTO>("User not found", ServiceErrorCode.NotFound);
+
+        return new ServiceResult<ProfileResponseDTO>
+        {
+            Success = true,
+            Message = "Profile retrieved successfully",
+            Data = MapToResponse(user)
+        };
     }
 
-    public async Task<ServiceResult<ProfileResponseDTO>> UpdateProfileAsync(int userId, UpdateProfileRequestDTO request)
+    public async Task<ServiceResult<ProfileResponseDTO>> UpdateProfileAsync(
+        int userId,
+        UpdateProfileRequestDTO request)
     {
         User? user = await userRepo.GetByIdAsync(userId);
-        if (user == null)
-            return new ServiceResult<ProfileResponseDTO> { Success = false, Message = "User not found" };
 
-        bool detailsUsedByAnotherUser = await userRepo.ExistsByEmailOrPhoneForOtherUserAsync(userId, request.Email, request.PhoneNumber);
+        if (user is null)
+            return Failure<ProfileResponseDTO>("User not found", ServiceErrorCode.NotFound);
+
+        if (string.IsNullOrWhiteSpace(request.FullName) ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            return Failure<ProfileResponseDTO>(
+                "Full name, email and phone number are required",
+                ServiceErrorCode.Validation);
+        }
+
+        bool detailsUsedByAnotherUser =
+            await userRepo.ExistsByEmailOrPhoneForOtherUserAsync(
+                userId,
+                request.Email,
+                request.PhoneNumber);
+
         if (detailsUsedByAnotherUser)
-            return new ServiceResult<ProfileResponseDTO> { Success = false, Message = "Email or phone number is already in use" };
+            return Failure<ProfileResponseDTO>(
+                "Email or phone number is already in use",
+                ServiceErrorCode.Conflict);
 
         user.FullName = request.FullName;
         user.Email = request.Email;
@@ -44,12 +63,24 @@ public class ProfileService : IProfileService
 
         await userRepo.UpdateAsync(user);
 
-        return new ServiceResult<ProfileResponseDTO> { Success = true, Data = MapToResponse(user), Message = "Profile updated successfully" };
+        return new ServiceResult<ProfileResponseDTO>
+        {
+            Success = true,
+            Message = "Profile updated successfully",
+            Data = MapToResponse(user)
+        };
     }
 
-    private static ProfileResponseDTO MapToResponse(User user)
-    {
-        return new ProfileResponseDTO
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
+
+    private static ProfileResponseDTO MapToResponse(User user) =>
+        new()
         {
             Id = user.Id,
             FullName = user.FullName,
@@ -59,5 +90,4 @@ public class ProfileService : IProfileService
             Language = user.Language,
             Currency = user.Currency
         };
-    }
 }
