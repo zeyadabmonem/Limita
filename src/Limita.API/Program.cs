@@ -5,6 +5,7 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // ---------- Services ----------
+        builder.Services.AddProblemDetails();
         builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -93,6 +94,8 @@ public partial class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
