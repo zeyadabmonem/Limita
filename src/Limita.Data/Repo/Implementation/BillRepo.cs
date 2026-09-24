@@ -1,4 +1,4 @@
-﻿namespace Limita.Data.Repo.Implementation;
+namespace Limita.Data.Repo.Implementation;
 
 public class BillRepo : IBillRepo
 {
@@ -13,14 +13,16 @@ public class BillRepo : IBillRepo
     {
         return await dbContext.Bills
             .AsNoTracking()
-            .Where(b => b.UserId == userId)
-            .OrderByDescending(b => b.DueDate)
+            .Where(bill => bill.UserId == userId)
+            .OrderByDescending(bill => bill.DueDate)
             .ToListAsync();
     }
 
     public async Task<Bill?> GetByIdAndUserIdAsync(int billId, int userId)
     {
         return await dbContext.Bills
-            .FirstOrDefaultAsync(b => b.Id == billId && b.UserId == userId);
+            .FirstOrDefaultAsync(bill =>
+                bill.Id == billId &&
+                bill.UserId == userId);
     }
 }

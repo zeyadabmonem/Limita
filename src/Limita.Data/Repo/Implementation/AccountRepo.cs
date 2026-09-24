@@ -12,17 +12,16 @@ public class AccountRepo : IAccountRepo
     public async Task<List<Account>> GetByUserIdAsync(int userId)
     {
         return await dbContext.Accounts
-            
-            .Where(a => a.UserId == userId)
+            .AsNoTracking()
+            .Where(account => account.UserId == userId)
             .ToListAsync();
     }
 
     public async Task<Account?> GetByIdAndUserIdAsync(int accountId, int userId)
     {
         return await dbContext.Accounts
-          
-            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+            .FirstOrDefaultAsync(account =>
+                account.Id == accountId &&
+                account.UserId == userId);
     }
-
-   
 }
