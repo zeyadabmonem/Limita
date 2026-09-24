@@ -1,10 +1,3 @@
-using Limita.Business.Common;
-using Limita.Business.DTOs.Accounts;
-using Limita.Business.Services.Interface;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-
 namespace Limita.API.Controllers;
 
 [Authorize]
@@ -22,31 +15,18 @@ public class AccountController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<AccountResponseDTO>>> GetAccounts()
     {
-        int? userId = GetAuthenticatedUserId();
-        if (userId == null)
-            return Unauthorized();
+        ServiceResult<List<AccountResponseDTO>> result =
+            await accountService.GetAccountsAsync(User.GetUserId());
 
-        ServiceResult<List<AccountResponseDTO>> result = await accountService.GetAccountsAsync(userId.Value);
-        return Ok(result.Data);
+        return result.ToActionResult(this);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<AccountResponseDTO>> GetAccount(int id)
+    [HttpGet("{accountId:int}")]
+    public async Task<ActionResult<AccountResponseDTO>> GetAccount(int accountId)
     {
-        int? userId = GetAuthenticatedUserId();
-        if (userId == null)
-            return Unauthorized();
+        ServiceResult<AccountResponseDTO> result =
+            await accountService.GetAccountAsync(User.GetUserId(), accountId);
 
-        ServiceResult<AccountResponseDTO> result = await accountService.GetAccountAsync(userId.Value, id);
-        if (!result.Success)
-            return NotFound(result.Message);
-
-        return Ok(result.Data);
-    }
-
-    private int? GetAuthenticatedUserId()
-    {
-        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(userIdClaim, out int userId) ? userId : null;
+        return result.ToActionResult(this);
     }
 }

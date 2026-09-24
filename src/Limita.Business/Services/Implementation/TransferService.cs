@@ -1,11 +1,3 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Beneficiary;
-using Limita.Business.DTOs.Transfer;
-using Limita.Business.Services.Interface;
-using Limita.Data;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-
 namespace Limita.Business.Services.Implementation;
 
 public class TransferService : ITransferService
@@ -18,7 +10,8 @@ public class TransferService : ITransferService
     public TransferService(
         LimitaDbContext dbContext,
         IAccountRepo accountRepo,
-        IBeneficiaryService beneficiaryService,ITransactionRepo transactionRepo)
+        IBeneficiaryService beneficiaryService,
+        ITransactionRepo transactionRepo)
     {
         this.dbContext = dbContext;
         this.accountRepo = accountRepo;
@@ -30,48 +23,39 @@ public class TransferService : ITransferService
         int userId,
         TransferRequestDTO requestDTO)
     {
-        if (requestDTO.Amount <= 0)
+        if (requestDTO.SourceAccountId <= 0 ||
+            requestDTO.BeneficiaryId <= 0 ||
+            requestDTO.Amount <= 0)
         {
-            return new ServiceResult<TransferResponseDTO>
-            {
-                Success = false,
-                Message = "Amount must be greater than zero"
-            };
+            return Failure<TransferResponseDTO>(
+                "Source account, beneficiary and amount must be valid",
+                ServiceErrorCode.Validation);
         }
 
-        var account = await accountRepo.GetByIdAndUserIdAsync(
+        Account? account = await accountRepo.GetByIdAndUserIdAsync(
             requestDTO.SourceAccountId,
             userId);
 
         if (account is null)
-        {
-            return new ServiceResult<TransferResponseDTO>
-            {
-                Success = false,
-                Message = "Source account not found"
-            };
-        }
+            return Failure<TransferResponseDTO>("Source account not found", ServiceErrorCode.NotFound);
 
         if (account.Balance < requestDTO.Amount)
         {
-            return new ServiceResult<TransferResponseDTO>
-            {
-                Success = false,
-                Message = "Insufficient balance"
-            };
+            return Failure<TransferResponseDTO>(
+                "Insufficient balance",
+                ServiceErrorCode.UnprocessableEntity);
         }
 
-        var beneficiaryResult = await beneficiaryService.GetBeneficiaryById(
-            userId,
-            requestDTO.BeneficiaryId);
+        ServiceResult<BeneficiaryResponseDTO> beneficiaryResult =
+            await beneficiaryService.GetBeneficiaryById(
+                userId,
+                requestDTO.BeneficiaryId);
 
         if (!beneficiaryResult.Success || beneficiaryResult.Data is null)
         {
-            return new ServiceResult<TransferResponseDTO>
-            {
-                Success = false,
-                Message = "Beneficiary not found"
-            };
+            return Failure<TransferResponseDTO>(
+                "Beneficiary not found",
+                ServiceErrorCode.NotFound);
         }
 
         await using var dbTransaction =
@@ -79,24 +63,26 @@ public class TransferService : ITransferService
 
         try
         {
+            DateTime createdAt = DateTime.UtcNow;
+            string transactionReference = Guid.NewGuid().ToString("N");
+
             account.Balance -= requestDTO.Amount;
 
-            var transaction = new Transaction
+            Transaction transaction = new()
             {
                 UserId = userId,
                 AccountId = account.Id,
                 BeneficiaryId = requestDTO.BeneficiaryId,
                 Amount = requestDTO.Amount,
                 Currency = account.Currency,
-                Type = Data.Entities.Enums.TransactionType.Transfer,
-                Status = Data.Entities.Enums.TransactionStatus.Completed,
-                Reference = Guid.NewGuid().ToString("N"),
+                Type = TransactionType.Transfer,
+                Status = TransactionStatus.Completed,
+                Reference = transactionReference,
                 Note = requestDTO.Note,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = createdAt
             };
 
-            await  transactionRepo.AddTransactionAsync(transaction);
-
+            await transactionRepo.AddTransactionAsync(transaction);
             await dbTransaction.CommitAsync();
 
             return new ServiceResult<TransferResponseDTO>
@@ -114,46 +100,69 @@ public class TransferService : ITransferService
                 }
             };
         }
-        catch
+        catch (Exception)
         {
             await dbTransaction.RollbackAsync();
 
-            return new ServiceResult<TransferResponseDTO>
-            {
-                Success = false,
-                Message = "Transfer failed"
-            };
+            return Failure<TransferResponseDTO>(
+                "Transfer failed",
+                ServiceErrorCode.Unexpected);
         }
     }
 
-    public async Task<ServiceResult<TransferResponseDTO>> GetTransferByIdAsync(int userId, int transactionId)
+    public async Task<ServiceResult<TransferResponseDTO>> GetTransferByIdAsync(
+        int userId,
+        int transactionId)
     {
-        var transfer = await transactionRepo.GetTransferAsync(transactionId);
+        if (transactionId <= 0)
+            return Failure<TransferResponseDTO>(
+                "Transfer id must be greater than zero",
+                ServiceErrorCode.Validation);
 
-        if(transfer == null || transfer.UserId != userId || transfer.BeneficiaryId is null)
-            return new ServiceResult<TransferResponseDTO> { Success = false, Message = "Invalid operation" };
+        Transaction? transfer = await transactionRepo.GetTransferAsync(transactionId);
 
+        if (transfer is null ||
+            transfer.UserId != userId ||
+            transfer.BeneficiaryId is null)
+        {
+            return Failure<TransferResponseDTO>(
+                "Transfer not found",
+                ServiceErrorCode.NotFound);
+        }
 
-         var beneficiary = await beneficiaryService.GetBeneficiaryById(userId, (int)transfer.BeneficiaryId );
+        ServiceResult<BeneficiaryResponseDTO> beneficiary =
+            await beneficiaryService.GetBeneficiaryById(
+                userId,
+                transfer.BeneficiaryId.Value);
 
-        if(beneficiary.Data is  null || !beneficiary.Success)
-              return new ServiceResult<TransferResponseDTO> { Success = false, Message = "Invalid operation" };
+        if (!beneficiary.Success || beneficiary.Data is null)
+        {
+            return Failure<TransferResponseDTO>(
+                "Transfer not found",
+                ServiceErrorCode.NotFound);
+        }
 
-
-        var transferresponse = new TransferResponseDTO
-        { 
-        
-             Amount = transfer.Amount,
-              BeneficiaryName = beneficiary.Data.Name,
-               Currency = transfer.Currency,
+        return new ServiceResult<TransferResponseDTO>
+        {
+            Success = true,
+            Message = "Transfer retrieved successfully",
+            Data = new TransferResponseDTO
+            {
+                Amount = transfer.Amount,
+                BeneficiaryName = beneficiary.Data.Name,
+                Currency = transfer.Currency,
                 Date = transfer.CreatedAt,
-                 Status = transfer.Status,
-                  TransactionReference= transfer.Reference
-
-
+                Status = transfer.Status,
+                TransactionReference = transfer.Reference
+            }
         };
-
-        return new ServiceResult<TransferResponseDTO> { Success = true, Message = "transfer retrieved" , Data = transferresponse };
-
     }
+
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
 }

@@ -1,10 +1,4 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Transfer;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Limita.Business.Services.Interface
+﻿namespace Limita.Business.Services.Interface
 {
     public interface ITransferService
     {

@@ -1,46 +1,38 @@
-﻿using Limita.Business.Services.Interface;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+namespace Limita.Business.Services.Implementation;
 
-namespace Limita.Business.Services.Implementation
+public class TokenService : ITokenService
 {
-    public class TokenService : ITokenService
+    private readonly IConfiguration configuration;
+
+    public TokenService(IConfiguration configuration)
     {
-        private readonly IConfiguration configuration;
+        this.configuration = configuration;
+    }
 
-        public TokenService(IConfiguration configuration)
-        {
-            this.configuration = configuration;
-        }
+    public string CreateToken(int userId)
+    {
+        var jwtSection = configuration.GetSection("Jwt");
 
-        public string CreateToken(int userId)
-        {
-            var jwtSection = configuration.GetSection("Jwt");
+        List<Claim> claims =
+        [
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+        ];
 
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
-            };
+        SymmetricSecurityKey key = new(
+            Encoding.UTF8.GetBytes(jwtSection["Key"]!));
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["Key"]!));
+        SigningCredentials credentials = new(
+            key,
+            SecurityAlgorithms.HmacSha256);
 
-            var credentials = new SigningCredentials(
-                key, SecurityAlgorithms.HmacSha256);
+        JwtSecurityToken token = new(
+            issuer: jwtSection["Issuer"],
+            audience: jwtSection["Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(
+                double.Parse(jwtSection["ExpiryMinutes"]!)),
+            signingCredentials: credentials);
 
-            var token = new JwtSecurityToken(
-                issuer: jwtSection["Issuer"],
-                audience: jwtSection["Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(
-                    double.Parse(jwtSection["ExpiryMinutes"]!)),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

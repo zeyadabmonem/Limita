@@ -1,10 +1,3 @@
-﻿using Limita.API.Helper;
-using Limita.Business.DTOs.Transaction;
-using Limita.Business.DTOs.Transactions;
-using Limita.Business.Services.Interface;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-
 namespace Limita.API.Controllers;
 
 [Authorize]
@@ -20,41 +13,26 @@ public class TransactionController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(
-        typeof(List<TransactionResponseDTO>),
-        StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TransactionResponseDTO>>> GetTransactions([FromQuery] TransactionFilterDTO transactionFilter)
+    public async Task<ActionResult<List<TransactionResponseDTO>>> GetTransactions(
+        [FromQuery] TransactionFilterDTO transactionFilter)
     {
-        int userId = User.GetUserId();
+        ServiceResult<List<TransactionResponseDTO>> result =
+            await transactionService.GetTransactionsAsync(
+                User.GetUserId(),
+                transactionFilter);
 
-        var response = await transactionService.GetTransactionsAsync(userId, transactionFilter);
-
-        if (!response.Success)
-        {
-            return BadRequest(response.Message);
-        }
-
-        return Ok(response.Data);
+        return result.ToActionResult(this);
     }
 
     [HttpGet("{transactionId:int}")]
-    public async Task<
-       ActionResult<TransactionResponseDTO>>
-       GetTransactionById(int transactionId)
+    public async Task<ActionResult<TransactionResponseDTO>> GetTransactionById(
+        int transactionId)
     {
-        int userId = User.GetUserId();
-
-        var response =
+        ServiceResult<TransactionResponseDTO> result =
             await transactionService.GetTransactionByIdAsync(
-                userId,
+                User.GetUserId(),
                 transactionId);
 
-        if (!response.Success)
-        {
-            return BadRequest(response.Message);
-        }
-
-        return Ok(response.Data);
+        return result.ToActionResult(this);
     }
 }

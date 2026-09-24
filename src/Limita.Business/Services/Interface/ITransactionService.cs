@@ -1,11 +1,4 @@
-﻿using Limita.Business.Common;
-using Limita.Business.DTOs.Transaction;
-using Limita.Business.DTOs.Transactions;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Limita.Business.Services.Interface
+﻿namespace Limita.Business.Services.Interface
 {
     public interface ITransactionService
     {

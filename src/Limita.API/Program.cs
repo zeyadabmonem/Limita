@@ -1,14 +1,3 @@
-using Limita.Business.Services.Implementation;
-using Limita.Business.Services.Interface;
-using Limita.Data;
-using Limita.Data.Repo.Implementation;
-using Limita.Data.Repo.Interface;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Text;
-
 public partial class Program
 {
     private static void Main(string[] args)
@@ -16,6 +5,7 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // ---------- Services ----------
+        builder.Services.AddProblemDetails();
         builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -57,6 +47,10 @@ public partial class Program
         builder.Services.AddScoped<ITransactionRepo, TransactionRepo>();
         builder.Services.AddScoped<ITransferService, TransferService>();
         builder.Services.AddScoped<ITransactionService, TransactionService>();
+        builder.Services.AddScoped<IBillRepo, BillRepo>();
+        builder.Services.AddScoped<IBillService, BillService>();
+        builder.Services.AddScoped<INotificationRepo, NotificationRepo>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
 
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
@@ -100,6 +94,8 @@ public partial class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

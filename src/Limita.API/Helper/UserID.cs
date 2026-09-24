@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-
-namespace Limita.API.Helper
+﻿namespace Limita.API.Helper
 {
     public static class ClaimsPrincipalExtensions
     {

@@ -1,6 +1,3 @@
-using Limita.Business.Common;
-using Limita.Business.DTOs.Accounts;
-
 namespace Limita.Business.Services.Interface;
 
 public interface IAccountService

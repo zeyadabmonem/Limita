@@ -1,63 +1,72 @@
-﻿using Azure;
-using Limita.Business.Common;
-using Limita.Business.DTOs.Auth;
-using Limita.Business.Services.Interface;
-using Limita.Data.Entities;
-using Limita.Data.Repo.Interface;
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace Limita.Business.Services.Implementation;
 
-namespace Limita.Business.Services.Implementation
+public class RegisterService : IRegisterService
 {
-    public class RegisterService : IRegisterService
-    {
-        private readonly IUserRepo userRepo;
+    private readonly IUserRepo userRepo;
 
-        public RegisterService(IUserRepo userRepo)
+    public RegisterService(IUserRepo userRepo)
+    {
+        this.userRepo = userRepo;
+    }
+
+    public async Task<ServiceResult<RegisterResponseDTO>> RegisterAsync(RegisterRequestDTO request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FullName) ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.PhoneNumber) ||
+            string.IsNullOrWhiteSpace(request.Password))
         {
-            this.userRepo = userRepo;
+            return Failure<RegisterResponseDTO>(
+                "All registration fields are required",
+                ServiceErrorCode.Validation);
         }
 
-        public async Task<ServiceResult<RegisterResponseDTO>> RegisterAsync(RegisterRequestDTO request)
+        if (await userRepo.ExistsByEmailOrPhoneAsync(request.Email, request.PhoneNumber))
         {
+            return Failure<RegisterResponseDTO>(
+                "Email or phone number is already in use",
+                ServiceErrorCode.Conflict);
+        }
 
-            bool isExist = await userRepo.ExistsByEmailOrPhoneAsync(request.Email,request.PhoneNumber);
-            if (isExist)
-                return new ServiceResult<RegisterResponseDTO> { Success = false, Message = "Data is Invalid" };
-
-            try
+        try
+        {
+            User user = new()
             {
-                string passhash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                PhoneNumber = request.PhoneNumber,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                FullName = request.FullName
+            };
 
-                User user = new User
+            int id = await userRepo.AddUserAsync(user);
+
+            return new ServiceResult<RegisterResponseDTO>
+            {
+                Success = true,
+                Message = "User created successfully",
+                Data = new RegisterResponseDTO
                 {
-                    PhoneNumber = request.PhoneNumber
-                    ,
-                    Email = request.Email
-                    ,
-                    PasswordHash = passhash
-                    ,
-                    CreatedAt = DateTime.UtcNow
-
-                    ,
-                    IsActive = true
-                    ,
-                    FullName = request.FullName
-
-                };
-
-                int id = await userRepo.AddUserAsync(user);
-
-                RegisterResponseDTO response = new RegisterResponseDTO() { Id = id, FullName = request.FullName, Email = request.Email };
-
-                return new ServiceResult<RegisterResponseDTO> { Data = response, Message = "User Created Successfully", Success = true };
-            }
-            catch (Exception)
-            {
-               return new ServiceResult<RegisterResponseDTO> {  Message = "Unexpected Error", Success = false };
-            }
-           
+                    Id = id,
+                    FullName = user.FullName,
+                    Email = user.Email
+                }
+            };
+        }
+        catch (Exception)
+        {
+            return Failure<RegisterResponseDTO>(
+                "Registration failed",
+                ServiceErrorCode.Unexpected);
         }
     }
+
+    private static ServiceResult<T> Failure<T>(string message, ServiceErrorCode errorCode) =>
+        new()
+        {
+            Success = false,
+            Message = message,
+            ErrorCode = errorCode
+        };
 }

@@ -1,6 +1,4 @@
-﻿using Limita.Data.Entities;
-
-namespace Limita.Data.Repo.Interface
+﻿namespace Limita.Data.Repo.Interface
 {
     public interface IBeneficiaryRepo
     {
