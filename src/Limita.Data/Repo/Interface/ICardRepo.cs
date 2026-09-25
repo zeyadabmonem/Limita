@@ -1,10 +1,9 @@
-﻿namespace Limita.Data.Repo.Interface
+namespace Limita.Data.Repo.Interface;
+
+public interface ICardRepo
 {
-    public interface ICardRepo
-    {
-        Task<List<Card>> GetCardsByUserIdAsync(int userId);
-        Task<Card?> GetCardByIdAsync(int cardId);
-
-
-    }
+    Task<List<Card>> GetCardsByUserIdAsync(int userId);
+    Task<Card?> GetCardByIdAsync(int cardId);
+    Task AddAsync(Card card);
+    Task UpdateAsync(Card card);
 }
