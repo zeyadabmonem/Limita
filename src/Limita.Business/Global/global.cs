@@ -12,6 +12,7 @@ global using Limita.Business.DTOs.Transfer;
 global using Limita.Business.Services.Interface;
 global using Limita.Data;
 global using Limita.Data.Entities;
+global using Limita.Data.Entities.Enums;
 global using Limita.Data.Repo.Interface;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.IdentityModel.Tokens;

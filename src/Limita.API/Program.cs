@@ -37,6 +37,7 @@ public partial class Program
         builder.Services.AddScoped<IBeneficiaryRepo, BeneficiaryRepo>();
         builder.Services.AddScoped<ITokenService, TokenService>();
         builder.Services.AddScoped<ILoginService, LoginService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IUserRepo, UserRepo>();
         builder.Services.AddScoped<IRegisterService, RegisterService>();
         builder.Services.AddScoped<IAccountRepo, AccountRepo>();
