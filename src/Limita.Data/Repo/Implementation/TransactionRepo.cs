@@ -28,6 +28,7 @@ public class TransactionRepo : ITransactionRepo
                 transaction.UserId == userId &&
                 (type == null || transaction.Type == type) &&
                 (status == null || transaction.Status == status) &&
+                (date == null || transaction.CreatedAt.Date == date.Value.Date))
             .OrderByDescending(transaction => transaction.CreatedAt)
             .ToListAsync();
     }
