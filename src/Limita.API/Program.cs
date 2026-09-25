@@ -1,10 +1,3 @@
-using Limita.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Text;
-
 public partial class Program
 {
     private static void Main(string[] args)
@@ -12,7 +5,12 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // ---------- Services ----------
-        builder.Services.AddControllers();
+        builder.Services.AddProblemDetails();
+        builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
         {
@@ -35,6 +33,25 @@ public partial class Program
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
+        builder.Services.AddScoped<IBeneficiaryService, BeneficiaryService>();
+        builder.Services.AddScoped<IBeneficiaryRepo, BeneficiaryRepo>();
+        builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<ILoginService, LoginService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IUserRepo, UserRepo>();
+        builder.Services.AddScoped<IRegisterService, RegisterService>();
+        builder.Services.AddScoped<IAccountRepo, AccountRepo>();
+        builder.Services.AddScoped<IProfileService, ProfileService>();
+        builder.Services.AddScoped<IAccountService, AccountService>();
+        builder.Services.AddScoped<ICardRepo, CardRepo>();
+        builder.Services.AddScoped<ICardService, CardService>();
+        builder.Services.AddScoped<ITransactionRepo, TransactionRepo>();
+        builder.Services.AddScoped<ITransferService, TransferService>();
+        builder.Services.AddScoped<ITransactionService, TransactionService>();
+        builder.Services.AddScoped<IBillRepo, BillRepo>();
+        builder.Services.AddScoped<IBillService, BillService>();
+        builder.Services.AddScoped<INotificationRepo, NotificationRepo>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
 
         // EF Core / SQL Server
         builder.Services.AddDbContext<LimitaDbContext>(options =>
@@ -78,6 +95,8 @@ public partial class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

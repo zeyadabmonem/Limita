@@ -1,5 +1,3 @@
-using Limita.Data.Entities.Enums;
-
 namespace Limita.Data.Entities;
 
 public class Card
