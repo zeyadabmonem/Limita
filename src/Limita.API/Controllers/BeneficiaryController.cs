@@ -13,7 +13,7 @@ public class BeneficiaryController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<BeneficiaryResponseDTO>> AddBeneficiary(
+    public async Task<IActionResult> AddBeneficiary(
         [FromBody] AddBeneficiaryRequestDTO requestDTO)
     {
         ServiceResult<BeneficiaryResponseDTO> result =
@@ -23,7 +23,7 @@ public class BeneficiaryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<BeneficiaryResponseDTO>>> GetAll()
+    public async Task<IActionResult> GetAll()
     {
         ServiceResult<List<BeneficiaryResponseDTO>> result =
             await beneficiaryService.GetAllBeneficiaries(User.GetUserId());
@@ -32,7 +32,7 @@ public class BeneficiaryController : ControllerBase
     }
 
     [HttpGet("{beneficiaryId:int}")]
-    public async Task<ActionResult<BeneficiaryResponseDTO>> GetById(int beneficiaryId)
+    public async Task<IActionResult> GetById(int beneficiaryId)
     {
         ServiceResult<BeneficiaryResponseDTO> result =
             await beneficiaryService.GetBeneficiaryById(
@@ -43,7 +43,7 @@ public class BeneficiaryController : ControllerBase
     }
 
     [HttpPut("{beneficiaryId:int}")]
-    public async Task<ActionResult<BeneficiaryResponseDTO>> UpdateBeneficiary(
+    public async Task<IActionResult> UpdateBeneficiary(
         int beneficiaryId,
         [FromBody] UpdateBeneficiaryRequestDTO requestDTO)
     {

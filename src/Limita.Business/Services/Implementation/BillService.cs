@@ -1,3 +1,5 @@
+using Limita.Data.Entities.Enums;
+
 namespace Limita.Business.Services.Implementation;
 
 public class BillService : IBillService

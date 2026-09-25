@@ -13,6 +13,7 @@ global using Limita.Business.DTOs.Transfer;
 global using Limita.Business.Services.Implementation;
 global using Limita.Business.Services.Interface;
 global using Limita.Data;
+global using Limita.Data.Entities.Enums;
 global using Limita.Data.Repo.Implementation;
 global using Limita.Data.Repo.Interface;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;

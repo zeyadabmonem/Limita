@@ -13,7 +13,7 @@ public class TransactionController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TransactionResponseDTO>>> GetTransactions(
+    public async Task<IActionResult> GetTransactions(
         [FromQuery] TransactionFilterDTO transactionFilter)
     {
         ServiceResult<List<TransactionResponseDTO>> result =
@@ -25,7 +25,7 @@ public class TransactionController : ControllerBase
     }
 
     [HttpGet("{transactionId:int}")]
-    public async Task<ActionResult<TransactionResponseDTO>> GetTransactionById(
+    public async Task<IActionResult> GetTransactionById(
         int transactionId)
     {
         ServiceResult<TransactionResponseDTO> result =

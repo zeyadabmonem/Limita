@@ -13,7 +13,7 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<NotificationResponseDTO>>> GetNotifications()
+    public async Task<IActionResult> GetNotifications()
     {
         ServiceResult<List<NotificationResponseDTO>> result =
             await notificationService.GetNotificationsAsync(User.GetUserId());

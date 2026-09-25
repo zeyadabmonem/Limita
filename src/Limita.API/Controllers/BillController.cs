@@ -13,7 +13,7 @@ public class BillController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<BillResponseDTO>>> GetBills()
+    public async Task<IActionResult> GetBills()
     {
         ServiceResult<List<BillResponseDTO>> result =
             await billService.GetBillsAsync(User.GetUserId());
@@ -22,7 +22,7 @@ public class BillController : ControllerBase
     }
 
     [HttpGet("{billId:int}")]
-    public async Task<ActionResult<BillResponseDTO>> GetBillById(int billId)
+    public async Task<IActionResult> GetBillById(int billId)
     {
         ServiceResult<BillResponseDTO> result =
             await billService.GetBillByIdAsync(
@@ -33,7 +33,7 @@ public class BillController : ControllerBase
     }
 
     [HttpPost("{billId:int}/pay")]
-    public async Task<ActionResult<PayBillResponseDTO>> PayBill(
+    public async Task<IActionResult> PayBill(
         int billId,
         [FromBody] PayBillRequestDTO requestDTO)
     {

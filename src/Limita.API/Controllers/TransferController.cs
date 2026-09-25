@@ -13,7 +13,7 @@ public class TransferController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TransferResponseDTO>> CreateTransfer(
+    public async Task<IActionResult> CreateTransfer(
         [FromBody] TransferRequestDTO requestDTO)
     {
         ServiceResult<TransferResponseDTO> result =
@@ -25,7 +25,7 @@ public class TransferController : ControllerBase
     }
 
     [HttpGet("{transferId:int}")]
-    public async Task<ActionResult<TransferResponseDTO>> GetTransfer(int transferId)
+    public async Task<IActionResult> GetTransfer(int transferId)
     {
         ServiceResult<TransferResponseDTO> result =
             await transferService.GetTransferByIdAsync(

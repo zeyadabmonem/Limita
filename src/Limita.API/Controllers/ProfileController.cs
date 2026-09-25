@@ -13,7 +13,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ProfileResponseDTO>> GetProfile()
+    public async Task<IActionResult> GetProfile()
     {
         ServiceResult<ProfileResponseDTO> result =
             await profileService.GetProfileAsync(User.GetUserId());
@@ -22,7 +22,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<ActionResult<ProfileResponseDTO>> UpdateProfile(
+    public async Task<IActionResult> UpdateProfile(
         [FromBody] UpdateProfileRequestDTO request)
     {
         ServiceResult<ProfileResponseDTO> result =

@@ -13,7 +13,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<AccountResponseDTO>>> GetAccounts()
+    public async Task<IActionResult> GetAccounts()
     {
         ServiceResult<List<AccountResponseDTO>> result =
             await accountService.GetAccountsAsync(User.GetUserId());
@@ -22,7 +22,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet("{accountId:int}")]
-    public async Task<ActionResult<AccountResponseDTO>> GetAccount(int accountId)
+    public async Task<IActionResult> GetAccount(int accountId)
     {
         ServiceResult<AccountResponseDTO> result =
             await accountService.GetAccountAsync(User.GetUserId(), accountId);

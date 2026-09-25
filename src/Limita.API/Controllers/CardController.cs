@@ -13,7 +13,7 @@ public class CardController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CardResponseDTO>>> GetAllCards()
+    public async Task<IActionResult> GetAllCards()
     {
         ServiceResult<List<CardResponseDTO>> result =
             await cardService.GetAll(User.GetUserId());
@@ -22,7 +22,7 @@ public class CardController : ControllerBase
     }
 
     [HttpGet("{cardId:int}")]
-    public async Task<ActionResult<CardResponseDTO>> GetCardById(int cardId)
+    public async Task<IActionResult> GetCardById(int cardId)
     {
         ServiceResult<CardResponseDTO> result =
             await cardService.GetById(User.GetUserId(), cardId);

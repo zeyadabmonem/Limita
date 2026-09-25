@@ -3,8 +3,8 @@ namespace Limita.API.Helper;
 public static class ServiceResultExtensions
 {
     public static IActionResult ToActionResult<T>(
-        this ControllerBase controller,
-        ServiceResult<T> result)
+        this ServiceResult<T> result,
+        ControllerBase controller)
     {
         if (result.Success)
             return controller.Ok(result.Data);

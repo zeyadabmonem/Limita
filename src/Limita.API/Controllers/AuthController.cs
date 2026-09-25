@@ -16,7 +16,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<RegisterResponseDTO>> Register(
+    public async Task<IActionResult> Register(
         [FromBody] RegisterRequestDTO requestDTO)
     {
         ServiceResult<RegisterResponseDTO> result =
@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDTO>> Login(
+    public async Task<IActionResult> Login(
         [FromBody] LoginRequestDTO requestDTO)
     {
         ServiceResult<LoginResponseDTO> result =
